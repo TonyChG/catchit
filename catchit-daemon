@@ -1,0 +1,102 @@
+#!/bin/bash
+################################################################################
+# Description   : Catchit daemon watch the ~/.todl folder                      #
+#                 Downloads all links in all files in ~/.todl                  #
+#                                                                              #
+# Example       : echo "<youtube-url>" >> ~/.todl/JohnLenhon                   #
+# Logs          : Standard output     ~/.logs_catchit                          #
+#                 Links final status  ~/.logs_catchit_downloads_links          #
+#                                                                              #
+# Necessite youtube-dl et ffmpeg                                               #
+# Usage         : setsid ./catchit-daemon                                      #
+# Suivi version :                                                              #
+#  V   | Date     | Auteur           | Description_des_modifications           #
+# -----|----------|------------------|-----------------------------------------#
+#  0.9 | 20170301 | antoine          | Creation                                #
+################################################################################
+
+# Declare environment variable
+if [ -n $CATCHIT_LOGS_PATH ]
+then
+    export CATCHIT_LOGS_PATH="$HOME/.logs_catchit"
+    if [ $? != 0 ]
+    then
+	exit 1
+    fi
+fi
+if [ -n $CATCHIT_LOGS_LINKS_PATH ]
+then
+    export CATCHIT_LOGS_LINKS_PATH="$HOME/.logs_catchit_downloads_links"
+    if [ $? != 0 ]
+    then
+	exit 1
+    fi
+fi
+
+# Create folder ~/.todl if is not here
+if test -d $HOME/.todl; then
+   echo "[OK] todl folder exist at $HOME/.todl" >> "${CATCHIT_LOGS_PATH}"
+else
+    mkdir -p $HOME/.todl
+    if [ $? == 0 ]
+    then
+	echo "[OK] Create directory .todl" >> "${CATCHIT_LOGS_PATH}"
+    else
+	echo "[ERROR] Impossible to create .todl directory" >> "${CATCHIT_LOGS_PATH}"
+	exit 1
+    fi
+fi
+# Create logs file /home/[username]/.logs_catchit
+echo "logs_catchit: "$(date +"[%d-%m-%y-%H:%M:%s]") >> "${CATCHIT_LOGS_LINKS_PATH}"
+while [ 1 ]
+do 
+    # Wait 5 seconds until recheck of ~/.todl folder
+    sleep 5
+    # Search for file in .todl folder
+    toDlFiles=$(ls $HOME/.todl/)
+    # If there is file in .todl folder
+    if [ -n "$toDlFiles" ]
+    then
+	# Get all filenames
+	files=($(echo $toDlFiles | tr -s ' '))
+	for i in ${!files[@]}
+	do
+	    # Write in logs file
+	    echo "["$(date +"%H:%M:%S")"]: ${files[$i]}" >> "${CATCHIT_LOGS_LINKS_PATH}"
+	    # Get all links of file
+	    links=($(cat $HOME/.todl/${files[$i]} | tr -s '\n'))
+	    echo "($(($i+1))/${#files[@]}) Open ${files[$i]}: Need to downloads ${#links[@]} links." >> "${CATCHIT_LOGS_PATH}"
+	    # If there is no links in file
+	    if [ ${#links[@]} = 0 ]
+	    then
+		# Remove this file
+		echo "($(($i+1))/${#files[@]}) Open ${files[$i]}: Remove $HOME/.todl/${files[$i]} 0 links." >> "${CATCHIT_LOGS_PATH}"
+		rm $HOME/.todl/${files[$i]}
+	    else
+	    # If there is links in file
+		for link in ${!links[@]}
+		do
+		    echo "($(($link+1))/${#links[@]}) Try to dl link: ${links[$link]}." >> "${CATCHIT_LOGS_PATH}"
+		    # Try to download link with catchit script
+		    ./catchit ${links[$link]} >> "${CATCHIT_LOGS_PATH}"
+		    wait
+		    # Write success in logs file
+		    if [ $? == 0 ]
+		    then
+			echo "["$(date +"%H:%M:%S")"]: [Success]: ${links[$link]}" >> "${CATCHIT_LOGS_LINKS_PATH}"
+		    else
+			# Write fail in logs file
+			echo "["$(date +"%H:%M:%S")"]: [Fail]: ${links[$link]}" >> "${CATCHIT_LOGS_LINKS_PATH}"
+		    fi
+		    # If there is no link in file
+		    if [ $(($link+1)) = ${#links[@]} ]
+		    then
+			# Remove this file
+			echo "($(($i+1))/${#files[@]}) Remove ${files[$i]}." >> "${CATCHIT_LOGS_PATH}"
+			rm $HOME/.todl/${files[$i]}
+		    fi
+		done
+	    fi
+	done
+    fi
+done
