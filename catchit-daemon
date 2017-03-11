@@ -46,14 +46,14 @@ function create_todl_folder() {
     echo "logs_catchit: "$(date +"[%d-%m-%y-%H:%M:%S]") >> $logs_links_file
     
     if test -d $path_todl_dir; then
-	print_logs $todl_dir_exist $logs_file
+	echo $todl_dir_exist 
     else
 	mkdir -p $path_todl_dir
 	if [ $? == 0 ]
 	then
-	    print_logs $todl_dir_create $logs_file
+	    echo $todl_dir_create 
 	else
-	    print_logs $todl_dir_err_create $logs_file
+	    echo $todl_dir_err_create
 	    exit 1
 	fi
     fi
