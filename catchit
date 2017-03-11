@@ -1,41 +1,64 @@
 #!/bin/bash
 #################################################################################
 # Description   : Script permettant le telechargement de video youtube          #
-# au meilleur format possible.                                                  #
-# Necessite youtube-dl et ffmpeg                                                #
+#                 au meilleur format possible.                                  #
+#                 Necessite youtube-dl et ffmpeg                                #
 # Usage         : catchit <youtube-url>                                         #
 #                                                                               #
 # Suivi version :                                                               #
 #  V   | Date     | Auteur           | Description des modifications            #
 # ­­­­­|­­­­­­­­­­|­­­­­­­­­­­­­­­­­­|­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­­#
 #  0.9 | 20170301 | antoine          | Creation                                 #
+#  1.0 | 20170310 | antoine          | Clean code                               #
 #################################################################################
+
+# Define all logs messages
+function define_logs_messages() {
+    ydl_is_installed='[OK]: youtube-dl is installed at /usr/bin/youtube-dl';
+    ffmpeg_is_installed='[OK]: ffmpeg is installed at /usr/bin/ffmpeg';
+    default_ydl_output="$HOME/catchit/%(title)s.%(ext)s";
+    best_format_message='[OK]: Get best format for download ...';
+    success_dl='[OK]: Successfull download';
+    error_ffmpeg='[ERR]: ffmpeg is not installed';
+    error_ydl='[ERR]: youtube-dl is not installed';
+    usage_message='Usage : catchit <youtube-url>';
+}
+
+# Declare Globabls
+function define_globals() {
+    BIN_YDL=/usr/bin/youtube-dl
+    BIN_FFMPEG=/usr/bin/ffmpeg
+}
+
+define_logs_messages
+define_globals
 
 if [ $# = 1 ] # Verification du nombre d'arguments
 then
-    if test -e /usr/local/bin/youtube-dl; then # Si youtube-dl est installer
-	echo "[OK] youtube-dl is installed at /usr/local/bin/youtube-dl"
-	if test -e /usr/bin/ffmpeg; then # Si ffmpeg est installer
-	    echo "[OK] ffmpeg is installed at /usr/bin/ffmpeg"
+    if test -e $BIN_YDL; then # Si youtube-dl est installer
+	echo $ydl_is_installed
+	if test -e $BIN_FFMPEG; then # Si ffmpeg est installer
+	    echo $ffmpeg_is_installed
 	    # Get best format
-	    if formatLine=$(/usr/local/bin/youtube-dl --list-formats $1 | grep 'best'); then 
-		echo "[OK] Get best format for download"
-		IFS=' ' read -r -a format <<< "$formatLine" # Recupere l'id du meilleur format
+	    if formatLine=$($BIN_YDL --list-formats $1 | grep 'best'); then 
+		echo $best_format_message
+		# Split format line
+		IFS=' ' read -r -a format <<< "$formatLine"
 		# Telecharge la video dans le meilleur format et le place dans /$HOME/Musique
-		if /usr/local/bin/youtube-dl -x -f ${format[0]} --output "$HOME/Musique/%(title)s.%(ext)s" $1
+		if $BIN_YDL -x -f ${format[0]} --output $default_ydl_output $1
 		then
-		    echo "[OK] Successfull download"
+		    echo $success_dl
 		fi
 	    fi
 	else
-	    echo "[ERROR] Need to install ffmpeg" 1>&2
+	    echo $error_ffmpeg 1>&2
 	    exit 1
 	fi
     else
-	echo "[ERROR] Need to install youtube-dl" 1>&2
+	echo $error_ydl 1>&2
 	exit 1
     fi
 else
-    echo "Usage: catchit <youtube-url>" 1>&2
+    echo $usage_message >&2
     exit 1
 fi
