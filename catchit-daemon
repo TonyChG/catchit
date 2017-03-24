@@ -2,18 +2,21 @@
 ################################################################################
 # Description   : Catchit daemon watch the ~/.todl folder                      #
 #                 Downloads all links in all files in ~/.todl                  #
+#                 Necessite youtube-dl et ffmpeg                               #
 #                                                                              #
 # Example       : echo "<youtube-url>" >> ~/.todl/JohnLenhon                   #
 # Logs          : Standard output     ~/.logs_catchit                          #
 #                 Links final status  ~/.logs_catchit_downloads_links          #
 #                                                                              #
-# Necessite youtube-dl et ffmpeg                                               #
 # Usage         : setsid ./catchit-daemon                                      #
+#                                                                              #
 # Suivi version :                                                              #
+#                                                                              #
 #  V   | Date     | Auteur           | Description_des_modifications           #
 # -----|----------|------------------|-----------------------------------------#
 #  0.9 | 20170301 | antoine          | Creation                                #
 #  1.0 | 20170311 | antoine          | Clean code                              #
+#                                                                              #
 ################################################################################
 
 # Display logs function
@@ -44,18 +47,18 @@ define_logs_text
 function create_todl_folder() {
     # Create logs file if he don't exist
     echo "logs_catchit: "$(date +"[%d-%m-%y-%H:%M:%S]") >> $logs_links_file
-    
+
     if test -d $path_todl_dir; then
-	echo $todl_dir_exist 
+        echo $todl_dir_exist 
     else
-	mkdir -p $path_todl_dir
-	if [ $? == 0 ]
-	then
-	    echo $todl_dir_create 
-	else
-	    echo $todl_dir_err_create
-	    exit 1
-	fi
+        mkdir -p $path_todl_dir
+        if [ $? == 0 ]
+        then
+            echo $todl_dir_create 
+        else
+            echo $todl_dir_err_create
+            exit 1
+        fi
     fi
 }
 create_todl_folder
@@ -69,54 +72,54 @@ do
     # If there is file in .todl folder
     if [ -n "$toDlFiles" ]
     then
-	# Get all filenames
-	files=($(echo $toDlFiles | tr -s ' '))
+        # Get all filenames
+        files=($(echo $toDlFiles | tr -s ' '))
 
-	for i in ${!files[@]}
-	do
-	    numberOfFile="${#files[@]}"
-	    fileId="$(($i+1))"
-	    fileName="${files[$i]}"
+        for i in ${!files[@]}
+        do
+            numberOfFile="${#files[@]}"
+            fileId="$(($i+1))"
+            fileName="${files[$i]}"
 
-	    # Write in logs file
-	    print_logs "$try_downloads $fileName" $logs_links_file
-	    # Get all links of file
-	    links=($(cat $path_todl_dir/${files[$i]} | tr -s '\n'))
-	    numberOfLinks="${#links[@]}"
-	    print_logs "($fileId/$numberOfFile): Open $fileName" $logs_file
-	    print_logs "($fileId/$numberOfFile): $numberOfLinks links." $logs_file
-	    # If there is no links in file
-	    if [ ${#links[@]} = 0 ]
-	    then
-		# Remove this file
-		print_logs $remove_file $logs_file
-		rm $path_todl_dir/${files[$i]}
-	    else
+            # Write in logs file
+            print_logs "$try_downloads $fileName" $logs_links_file
+            # Get all links of file
+            links=($(cat $path_todl_dir/${files[$i]} | tr -s '\n'))
+            numberOfLinks="${#links[@]}"
+            print_logs "($fileId/$numberOfFile): Open $fileName" $logs_file
+            print_logs "($fileId/$numberOfFile): $numberOfLinks links." $logs_file
+            # If there is no links in file
+            if [ ${#links[@]} = 0 ]
+            then
+                # Remove this file
+                print_logs $remove_file $logs_file
+                rm $path_todl_dir/${files[$i]}
+            else
 
-		# If there is links in file
-		for link in ${!links[@]}
-		do
-		    print_logs "($(($link+1))/${#links[@]}) Try to dl link: ${links[$link]}." $logs_file
-		    # Try to download link with catchit script
-		    ./catchit ${links[$link]} >> $logs_file
-		    wait
-		    # Write success in logs file
-		    if [ $? == 0 ]
-		    then
-			print_logs "[OK]: ${links[$link]}" $logs_links_file
-		    else
-			# Write fail in logs file
-			print_logs "[KO]: ${links[$link]}" $logs_links_file
-		    fi
-		    # If there is no link in file
-		    if [ $(($link+1)) = ${#links[@]} ]
-		    then
-			# Remove this file
-			print_logs "Remove ${files[$i]}." $logs_file
-			rm $HOME/.todl/${files[$i]}
-		    fi
-		done
-	    fi
-	done
+                # If there is links in file
+                for link in ${!links[@]}
+                do
+                    print_logs "($(($link+1))/${#links[@]}) Try to dl link: ${links[$link]}." $logs_file
+                    # Try to download link with catchit script
+                    ./catchit ${links[$link]} >> $logs_file
+                    wait
+                    # Write success in logs file
+                    if [ $? == 0 ]
+                    then
+                        print_logs "[OK]: ${links[$link]}" $logs_links_file
+                    else
+                        # Write fail in logs file
+                        print_logs "[KO]: ${links[$link]}" $logs_links_file
+                    fi
+                    # If there is no link in file
+                    if [ $(($link+1)) = ${#links[@]} ]
+                    then
+                        # Remove this file
+                        print_logs "Remove ${files[$i]}." $logs_file
+                        rm $HOME/.todl/${files[$i]}
+                    fi
+                done
+            fi
+        done
     fi
 done

@@ -16,7 +16,7 @@
 function define_logs_messages() {
     ydl_is_installed='[OK]: youtube-dl is installed at /usr/bin/youtube-dl';
     ffmpeg_is_installed='[OK]: ffmpeg is installed at /usr/bin/ffmpeg';
-    default_ydl_output="$HOME/catchit/%(title)s.%(ext)s";
+    default_ydl_output="$HOME/Musique/%(title)s.%(ext)s";
     best_format_message='[OK]: Get best format for download ...';
     success_dl='[OK]: Successfull download';
     error_ffmpeg='[ERR]: ffmpeg is not installed';
@@ -45,7 +45,7 @@ then
 		# Split format line
 		IFS=' ' read -r -a format <<< "$formatLine"
 		# Telecharge la video dans le meilleur format et le place dans /$HOME/Musique
-		if $BIN_YDL -x -f ${format[0]} --output $default_ydl_output $1
+		if $BIN_YDL --no-playlist -x -f ${format[0]} --output $default_ydl_output $1
 		then
 		    echo $success_dl
 		fi
